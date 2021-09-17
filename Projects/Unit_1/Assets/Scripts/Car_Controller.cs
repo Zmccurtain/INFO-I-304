@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Car_Controller: MonoBehaviour
 {
-    public float speed;
+    public float acceleration;
     public float maxSpeed;
     public float nitroFactor;
     private Rigidbody rb;
@@ -24,16 +24,20 @@ public class Car_Controller: MonoBehaviour
     }
     void Nitro()
     {
-        if (Input.GetKeyDown(KeyCode.Space)) { speed *= nitroFactor; maxSpeed *= nitroFactor; }
-        if (Input.GetKeyUp(KeyCode.Space)) { speed /= nitroFactor; maxSpeed /= nitroFactor; }
+        if (Input.GetKeyDown(KeyCode.Space)) { acceleration *= nitroFactor; maxSpeed *= nitroFactor; }
+        if (Input.GetKeyUp(KeyCode.Space)) { acceleration /= nitroFactor; maxSpeed /= nitroFactor; }
     }
     void Movement()
     {
-        var target = maxSpeed * Input.GetAxisRaw("Vertical");
-        var torque = Input.GetAxisRaw("Horizontal");
-        rb.AddTorque(transform.up * torque * speed * .4f);
+        var v = Input.GetAxisRaw("Vertical");
+        var targetV = transform.TransformDirection(transform.forward*maxSpeed * v);
+        var targetH = Input.GetAxisRaw("Horizontal");
+        rb.AddTorque(transform.up * targetH * transform.InverseTransformDirection(rb.velocity).z);
+        Debug.Log(transform.forward);
+        //Vector3 torque = Mathf.Clamp(targetH * rb.velocity.z, -acceleration, acceleration) * transform.up;
 
-        Vector3 force = Mathf.Clamp(target - rb.velocity.z, -speed, speed) * transform.forward;
+        Vector3 force = Mathf.Clamp((targetV - rb.velocity).magnitude * v, -acceleration, acceleration) * transform.forward;
         rb.AddForce(force);
+        //rb.AddTorque(torque);
     }
 }
