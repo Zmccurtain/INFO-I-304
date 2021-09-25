@@ -30,10 +30,10 @@ public class Car_Controller: MonoBehaviour
     void Movement()
     {
         var v = Input.GetAxisRaw("Vertical");
-        var targetV = transform.TransformDirection(transform.forward*maxSpeed * v);
+        var targetV = transform.TransformDirection(transform.forward) * maxSpeed * v;
         var targetH = Input.GetAxisRaw("Horizontal");
-        rb.AddTorque(transform.up * targetH * transform.InverseTransformDirection(rb.velocity).z);
-        Debug.Log(transform.forward);
+        rb.AddTorque(transform.up * targetH * transform.InverseTransformDirection(rb.velocity).z * acceleration / 20);
+        Debug.Log(transform.InverseTransformDirection(rb.velocity).z);
         //Vector3 torque = Mathf.Clamp(targetH * rb.velocity.z, -acceleration, acceleration) * transform.up;
 
         Vector3 force = Mathf.Clamp((targetV - rb.velocity).magnitude * v, -acceleration, acceleration) * transform.forward;
