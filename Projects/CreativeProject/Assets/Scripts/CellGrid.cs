@@ -6,71 +6,25 @@ public class CellGrid : MonoBehaviour
 {
     public Material material;
     public Texture2D highlight;
-    public int[,] grid;
+    public Cell[,] grid;
 
-    public int colLimit = 4;
-    public int rowLimit = 2;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         material = GetComponent<MeshRenderer>().sharedMaterial;
         highlight = new Texture2D(1000, 500);
-        grid = new int[,]{  { 0,0,0,0,1,0,0,0,0,0 },
-                            { 0,0,0,0,0,0,0,0,0,0 },
-                            { 0,0,0,0,0,0,1,0,0,0 },
-                            { 0,0,1,0,0,0,0,0,0,0 },
-                            { 0,0,0,0,0,0,0,0,0,0 } };
+        grid = new Cell[5, 10];
 
-        for(int row = 0; row < highlight.height; row++)
+        for(int i = 0; i <grid.GetLength(0); i++)
         {
-            for(int col = 0; col< highlight.width; col++)
+            for(int j = 0; j < grid.GetLength(1); j++)
             {
-                highlight.SetPixel(col, row, Color.black);
+                grid[i, j] = new Cell((i * 100), (j * 100), this);
+                grid[i, j].setColor(Cell.ColorType.BLACK);
             }
         }
-        Draw();
+        grid[2, 2].inside = GameObject.Find("Character").GetComponent<Character>();
+        GameObject.Find("Character").GetComponent<Character>().currentCell = grid[2, 2];
     }
-
-    public void Draw()
-    {
-        Color color = Color.black;
-        for (int row = 0; row < grid.GetLength(0); row++)
-        {
-            for (int col = 0; col < grid.GetLength(1); col++)
-            {
-                
-                
-                if (grid[row,col] == 1)
-                {
-                    Debug.Log("hello");
-                    color = Color.white;
-                }
-                else
-                {
-                    color = Color.black;
-                }
-
-                for (int i = 500 - ((row + 1) * 100); i <= 500 - (row * 100); i++)
-                {
-                    for (int j = col*100; j <= (col+1)*100; j++)
-                    {
-                        highlight.SetPixel(j, i, color);
-                    }
-                }
-                
-            }
-
-        }
-        highlight.Apply();
-        material.SetTexture("_Highlight", highlight);
-    }
-
-    // Update is called once per frame
-    public void Update()
-    {
-        
-    }
-
-
 }
 
