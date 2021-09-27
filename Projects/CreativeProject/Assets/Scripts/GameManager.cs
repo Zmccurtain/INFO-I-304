@@ -8,8 +8,10 @@ public class GameManager : MonoBehaviour
     public CellGrid lower;
     public CellGrid upper;
 
-    List<Character> characters;
+    public List<Character> characters;
+    public Character selected;
 
+    private IEnumerator coroutine;
     // Start is called before the first frame update
     private void Start()
     {
@@ -21,26 +23,42 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKey(KeyCode.Mouse0))
+        if (Input.GetKeyUp(KeyCode.Mouse0))
         {
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
             if(Physics.Raycast(ray, out hit))
             {
-                Character selected = hit.collider.gameObject.GetComponent<Character>();
-                if (selected != null)
+                if (selected == null)
                 {
-                    foreach(Cell cell in BFS(selected.currentCell, selected.movement))
+                    selected = hit.collider.gameObject.GetComponent<Character>();
+                    if (selected != null)
                     {
-                        cell.setColor(Cell.ColorType.BLUE);
+                        foreach (Cell cell in BFS(selected.currentCell, selected.movement))
+                        {
+                            cell.setColor(Cell.ColorType.RED);
+                        }
                     }
                 }
+
+                else
+                {
+                    CellGrid gridHit;
+                    if (hit.point.y > 100) gridHit = upper;
+                    else gridHit = lower;
+                    selected.loc = gridHit.grid[(int)((gridHit.transform.position.z - hit.point.z - 11.98f) * -1 / ((11.98f * 2) / 5))
+                                                , (int)((gridHit.transform.position.x - hit.point.x + 22.38f) / ((22.38f * 2) / 10))].center;
+                    foreach (Cell cell in BFS(selected.currentCell, selected.movement))
+                    {
+                        cell.setColor(Cell.ColorType.BLACK);
+                    }
+                    selected = null;
+                }
             }
-
-
         }
     }
+
 
     public List<Cell> BFS(Cell root, int depthLimit)
     {

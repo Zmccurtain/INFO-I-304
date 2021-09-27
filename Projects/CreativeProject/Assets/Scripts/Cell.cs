@@ -13,7 +13,9 @@ public class Cell
     public Character inside = null;
     public int depth = 0;
 
-    public bool lower = false; 
+    public bool lower = false;
+
+    public Vector3 center;
     public enum ColorType
     {
         RED,
@@ -30,6 +32,9 @@ public class Cell
         this.col = col;
         this.row = row;
         this.outline = new List<Vector2>();
+        this.center = new Vector3(22.38f - ((((col / 100) + .5f) / 10) * (22.38f * 2)) + grid.transform.position.x, 0,
+                                  ((((((((500 -row)-100) / 100) + .5f) / 5) * (11.98f * 2)) - 11.98f) * -1) + grid.transform.position.z);
+       
 
         for (int i = 500-(row+100); i < 500 - row; i++)
         {
