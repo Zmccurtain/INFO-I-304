@@ -45,14 +45,16 @@ public class GameManager : MonoBehaviour
                 else
                 {
                     CellGrid gridHit;
-                    if (hit.point.y > 100) gridHit = upper;
+                    if (hit.point.y > 1) gridHit = upper;
                     else gridHit = lower;
-                    selected.loc = gridHit.grid[(int)((gridHit.transform.position.z - hit.point.z - 11.98f) * -1 / ((11.98f * 2) / 5))
-                                                , (int)((gridHit.transform.position.x - hit.point.x + 22.38f) / ((22.38f * 2) / 10))].center;
                     foreach (Cell cell in BFS(selected.currentCell, selected.movement))
                     {
                         cell.setColor(Cell.ColorType.BLACK);
                     }
+                    selected.currentCell = gridHit.grid[(int)((gridHit.transform.position.z - hit.point.z - 11.98f) * -1 / ((11.98f * 2) / 5))
+                                                , (int)((gridHit.transform.position.x - hit.point.x + 22.38f) / ((22.38f * 2) / 10))];
+                    selected.loc = selected.currentCell.center;
+                    
                     selected = null;
                 }
             }
@@ -119,7 +121,7 @@ public class GameManager : MonoBehaviour
             int newRow = (int)((row / 100) - move.x);
             int newCol = (int)((col / 100) - move.y);
 
-            if (newRow < 0) children.Add(lower.grid[0, newCol]);
+            if (newRow > 4) children.Add(lower.grid[0, newCol]);
 
             if (newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 10) children.Add(upper.grid[newRow, newCol]);
         }
