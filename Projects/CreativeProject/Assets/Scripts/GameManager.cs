@@ -1,24 +1,27 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-
-    public CellGrid lower;
-    public CellGrid upper;
+    public HPbar hPbar;
+    public CellGrid grid;
 
     public List<Character> characters;
-    public Character selected;
+    public Character selected = null;
+    public CellGrid.ColorType moveColor = CellGrid.ColorType.BLUE;
 
-    private IEnumerator coroutine;
+    public bool attacking = false;
+
+    List<Cell> withinMove;
+    List<Cell> withinAttack;
     // Start is called before the first frame update
     private void Start()
     {
-        foreach (Cell cell in lower.grid)
-        {
-            cell.lower = true;
-        }
+        grid = GameObject.Find("Grid").GetComponent<CellGrid>();
+        characters = new List<Character>(GetComponentsInChildren<Character>());
+        hPbar.gameObject.SetActive(false);
     }
     // Update is called once per frame
     void Update()
@@ -28,40 +31,71 @@ public class GameManager : MonoBehaviour
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            if(Physics.Raycast(ray, out hit))
+            if(Physics.Raycast(ray, out hit, LayerMask.GetMask("Grid")))
             {
-                if (selected == null)
+                var col = (int)((grid.worldBounds.max.x - hit.point.x) / grid.worldBounds.size.x * grid.width);
+                var row = (int)((hit.point.z - grid.worldBounds.min.z) / grid.worldBounds.size.z * grid.height);
+                Cell cellHit = grid.grid[row, col];
+                if (selected != null)
                 {
-                    selected = hit.collider.gameObject.GetComponent<Character>();
-                    if (selected != null)
+                    if (attacking)
                     {
-                        foreach (Cell cell in BFS(selected.currentCell, selected.movement))
-                        {
-                            cell.setColor(Cell.ColorType.RED);
-                        }
+                        Attacking(cellHit);
                     }
-                }
+                    else
+                    {
+                        Moving(cellHit);
+                    }
 
-                else
-                {
-                    CellGrid gridHit;
-                    if (hit.point.y > 1) gridHit = upper;
-                    else gridHit = lower;
-                    foreach (Cell cell in BFS(selected.currentCell, selected.movement))
-                    {
-                        cell.setColor(Cell.ColorType.BLACK);
-                    }
-                    selected.currentCell = gridHit.grid[(int)((gridHit.transform.position.z - hit.point.z - 11.98f) * -1 / ((11.98f * 2) / 5))
-                                                , (int)((gridHit.transform.position.x - hit.point.x + 22.38f) / ((22.38f * 2) / 10))];
-                    selected.loc = selected.currentCell.center;
-                    
+
                     selected = null;
+                    hPbar.selected = null;
+                    hPbar.gameObject.SetActive(false);
+                    return;
+                }
+                if (cellHit.inside != null)
+                {
+                    selected = cellHit.inside;
+                    withinMove = new List<Cell>(BFS(selected.currentCell, selected.movementRange));
+                    setToColor(withinMove, moveColor);
+                    hPbar.gameObject.SetActive(true);
+                    hPbar.selected = selected;
                 }
             }
         }
     }
 
+    void Attacking(Cell cellHit)
+    {
+        setToColor(withinAttack, CellGrid.ColorType.BLACK);
+        if (withinAttack.Contains(cellHit))
+        {
+            cellHit.inside.takeDamage(selected.damage);
+            attacking = false;
+        }
+    }
 
+    void Moving(Cell cellHit)
+    {
+        setToColor(withinMove, CellGrid.ColorType.BLACK);
+        if (withinMove.Contains(cellHit))
+        {
+            
+            selected.targetCell.inside = null;
+            cellHit.inside = selected;
+            cellHit.path = new List<Cell>(cellHit.tempPath);
+            cellHit.tempPath = new List<Cell>();
+            selected.targetCell = cellHit;
+        }
+    }
+
+    void setToColor(List<Cell> cells, CellGrid.ColorType type)
+    {
+        foreach(Cell cell in cells)
+        {
+            grid.setColor(cell, type);
+        }
+    }
     public List<Cell> BFS(Cell root, int depthLimit)
     {
         List<Cell> within = new List<Cell>();
@@ -73,59 +107,69 @@ public class GameManager : MonoBehaviour
             Cell cur = q.Dequeue();
             if(cur.depth > depthLimit)
             {
-                continue;
+                return within;
             }
             within.Add(cur);
 
-            List<Cell> children = new List<Cell>();
-
-            if (cur.lower) children = getAdjacentL(cur.row, cur.col);
-            else children = getAdjacentU(cur.row, cur.col);
-            
-
-            foreach(Cell cell in children)
+            if (cur.depth < depthLimit)
             {
-                cell.depth = cur.depth + 1;
-                q.Enqueue(cell);
+                foreach (Cell cell in getAdjacent(cur, cur.row, cur.col))
+                {
+                    if (!within.Contains(cell) && !q.Contains(cell))
+                    {
+                        cell.tempPath = new List<Cell>(cur.tempPath)
+                        {
+                            cur
+                        };
+                        cell.depth = cur.depth + 1;
+                        q.Enqueue(cell);
+                    }
+                }
             }
         }
-
         return within;
     }
 
-    public List<Cell> getAdjacentL(int row, int col)
+    public List<Cell> getAdjacent(Cell root, int row, int col)
     {
         List<Cell> children = new List<Cell>();
         Vector2[] moves = { new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1), new Vector2(0, 1) };
         foreach (Vector2 move in moves)
         {
 
-            int newRow = (int)((row / 100) - move.x);
-            int newCol = (int)((col / 100) - move.y);
+            int newRow = (int)((row / grid.pixelsPerCell) - move.x);
+            int newCol = (int)((col / grid.pixelsPerCell) - move.y);
+            
+            if (newRow >= 0 && newRow < grid.height && newCol >= 0 && newCol < grid.width)
+            {
+                Cell child = grid.grid[newRow, newCol];
 
-            if (newRow < 0) children.Add(upper.grid[4, newCol]);
-
-            if (newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 10) children.Add(lower.grid[newRow, newCol]);
+                if (move == new Vector2(1, 0))
+                {
+                    if (root.isRamp)
+                    {
+                        children.Add(child);
+                        continue;
+                    }
+                }
+                if (child.isRamp)
+                {
+                    children.Add(child);
+                    continue;
+                }
+                if (root.center.y - child.center.y > -.5f) {
+                    children.Add(child); 
+                }
+            }
         }
-
         return children;
     }
 
-    public List<Cell> getAdjacentU(int row, int col)
+    public void setAttacking()
     {
-        List<Cell> children = new List<Cell>();
-        Vector2[] moves = { new Vector2(-1, 0), new Vector2(1, 0), new Vector2(0, -1), new Vector2(0, 1) };
-        foreach (Vector2 move in moves)
-        {
-
-            int newRow = (int)((row / 100) - move.x);
-            int newCol = (int)((col / 100) - move.y);
-
-            if (newRow > 4) children.Add(lower.grid[0, newCol]);
-
-            if (newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 10) children.Add(upper.grid[newRow, newCol]);
-        }
-
-        return children;
+        attacking = true;
+        withinAttack = new List<Cell>(BFS(selected.currentCell, selected.attackRange));
+        setToColor(withinMove, CellGrid.ColorType.BLACK);
+        setToColor(withinAttack, CellGrid.ColorType.RED);
     }
 }

@@ -4,99 +4,33 @@ using UnityEngine;
 
 public class Cell
 {
-    public ColorType type;
     public Color color;
+
     public int row;
     public int col;
-    public List<Vector2> outline;
-    public CellGrid grid;
+
+    public List<Vector2> outline = new List<Vector2>();
+
     public Character inside = null;
+
     public int depth = 0;
+    public List<Cell> path;
+    public List<Cell> tempPath;
+    
 
     public bool lower = false;
 
-    public Vector3 center;
-    public enum ColorType
-    {
-        RED,
-        GREEN,
-        BLUE,
-        BLACK,
-        WHITE
-    }
+    public Vector3 center = Vector3.zero;
+    public bool isRamp = false;
 
     
-    public Cell(int row, int col, CellGrid grid)
+    public Cell(int row, int col)
     {
-        this.grid = grid;
+        path = new List<Cell>();
+        tempPath = new List<Cell>();
+        this.color = Color.magenta;
+
         this.col = col;
         this.row = row;
-        this.outline = new List<Vector2>();
-        this.center = new Vector3(22.38f - ((((col / 100) + .5f) / 10) * (22.38f * 2)) + grid.transform.position.x, 0,
-                                  ((((((((500 -row)-100) / 100) + .5f) / 5) * (11.98f * 2)) - 11.98f) * -1) + grid.transform.position.z);
-       
-
-        for (int i = 500-(row+100); i < 500 - row; i++)
-        {
-            for (int j = col; j < col + 100; j++)
-            {
-                if (InOutline(i, j))
-                {
-                    this.outline.Add(new Vector2(i, j));
-                }
-            }
-        }
-    }
-    
-    bool InOutline(int row, int col)
-    {
-        
-        if(row < 500 - (this.row + 10) && row > 500 - (this.row + 90))
-        {
-            if(col > this.col + 10 && col < this.col + 90)
-            {
-                return false;
-            }
-        }
-        
-        /*
-        if(row > row -30 || row < row - 70)
-        {
-            if(col > col + 70 || col < col + 30)
-            {
-                return false;
-            }
-        }
-        */
-        return true;
-    }
-
-    public Color TypeToColor(ColorType type)
-    {
-        switch (type)
-        {
-            case ColorType.RED:
-                return grid.material.GetColor("_RED");
-            case ColorType.GREEN:
-                return grid.material.GetColor("_GREEN");
-            case ColorType.BLUE:
-                return grid.material.GetColor("_BLUE");
-            case ColorType.WHITE:
-                return Color.white;
-            default:
-                return Color.black;
-        }
-    }
-    public void setColor(ColorType type)
-    {
-        this.type = type;
-        this.color = TypeToColor(type);
-
-        foreach (Vector2 loc in this.outline)
-        {
-            grid.highlight.SetPixel((int)loc.y, (int)loc.x, this.color);
-        }
-        grid.highlight.Apply();
-        grid.material.SetTexture("_Highlight", grid.highlight);
     }
 }
